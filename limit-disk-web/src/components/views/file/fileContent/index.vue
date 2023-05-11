@@ -1,6 +1,8 @@
 <template lang="pug">
 #fileContent(v-if="getGlobalStore.filePathInfo")
   .header
+    Button(@click="getGlobalStore.filePathInfo=undefined" :left-icon="homeImage" type="primary" ) 主页
+    .interval
     Button(@click="upperLevel" :left-icon="upperImage") 上一级
     .interval
     Button(@click="uploadFile" :left-icon="uploadImage") 上传文件
@@ -12,7 +14,9 @@
       TableCol(:data="data" label="名称" onKey="name" :fill="true")
       TableCol(:data="data" label="创建时间" :onKey="()=>timeFormat(data.row.time)" :fill="true")
       TableCol(:data="data" label="文件大小" :onKey="()=>getSize(data.row.size)" :fill="true")
-      TableCol(:data="data" label="类型" :onKey="()=>data.row.suffix?.slice(1)??data.row.isFile?'文件':'文件夹'" width="60px" )
+      TableCol(:data="data" label="类型" :onKey="()=>data.row.suffix?.slice(1)??data.row.isFile?'文件':'文件夹'" width="60px")
+      TableCol(:data="data" type="button" :button="{type:'primary',label:'收藏',click:()=>collectItem(data.row)}" width="60px" )
+      TableCol(:data="data" type="button" :button="{type:'error',label:'删除',click:()=>removeItems([data.row])}" width="60px" )
 #fileContent(v-else)
   #commonly.body
     .title · 磁盘
@@ -20,13 +24,15 @@
       .char(v-for="item in items" :key="item.id" @click="()=>clickItem(item.id,item.name)")
         img.icon(:src="folderImage")
         .title 本地 : {{item.name[0]}}
-    .title · 收藏夹
-    Table(:data="favorites" onKey="path" @clickRow="(item)=>clickItem(item.path,item.name,item.parentPath)")
-      template(#default="{data}")
-        TableCol(:data="data" :onKey="()=>getFileSrc(data.row)" type="icon" width="30px" )
-        TableCol(:data="data" label="名称" onKey="name" :fill="true")
-        TableCol(:data="data" label="创建时间" :onKey="()=>timeFormat(data.row.time)" :fill="true")
-        TableCol(:data="data" label="路径" onKey="path" :fill="true")
+    template(v-if="favorites.length>0")
+      .title · 收藏夹
+      Table( :data="favorites" onKey="path" @clickRow="(item)=>clickItem(item.path,item.name,item.parentPath)")
+        template(#default="{data}")
+          TableCol(:data="data" :onKey="()=>getFileSrc(data.row)" type="icon" width="30px" )
+          TableCol(:data="data" label="名称" onKey="name" :fill="true")
+          TableCol(:data="data" label="创建时间" :onKey="()=>timeFormat(data.row.time)" :fill="true")
+          TableCol(:data="data" label="路径" onKey="path" :fill="true")
+          TableCol(:data="data" type="button" :button="{type:'error',label:'删除',click:()=>cancelCollectItem(data.row)}" width="60px" )
 </template>
 <script setup lang="ts">
 import { globalStore } from '@/stores'
@@ -41,6 +47,7 @@ import audioImage from '@/assets/image/audio.png'
 import itemImage from '@/assets/image/item.png'
 import upperImage from '@/assets/image/upper.png'
 import uploadImage from '@/assets/image/upload.png'
+import homeImage from '@/assets/image/home.png'
 
 import type { FileListType, FileType, ItemListType, TreeItemType } from '@/interface'
 import { computed, onBeforeMount, reactive, ref, watch } from 'vue'
@@ -56,7 +63,8 @@ const suffixMap: { [key: string]: 'pic' | 'audio' | 'video' } = {
   '.flac': 'audio',
   '.wav': 'audio',
   '.mp4': 'video',
-  '.ts': 'video'
+  '.ts': 'video',
+  '.mkv': 'video'
 }
 const suffixImageMap: { pic: string; audio: string; video: string; file: string } = {
   pic: picImage,
@@ -76,14 +84,17 @@ withDefaults(
     items: () => []
   }
 )
-const getFavorites = new Request<ItemListType[]>({
+const getFavoritesReq = new Request<ItemListType[]>({
   method: 'get',
   url: '/file-system/collect-path'
 })
+const getFavorites = async () => {
+  await getFavoritesReq.req()
+  favorites.value = getFavoritesReq.resData ?? []
+}
 const fileList = ref<FileListType[]>([])
-onBeforeMount(async () => {
-  await getFavorites.req()
-  favorites.value = getFavorites.resData ?? []
+onBeforeMount(() => {
+  getFavorites()
 })
 const getDirDataReq = new Request<FileListType[]>({
   method: 'post',
@@ -117,7 +128,7 @@ const upperLevel = async () => {
 }
 const clickFileListItem = (item: FileListType) => {
   if (item.isFile) {
-    console.log(111)
+    console.log(item)
   } else {
     getGlobalStore.filePathInfo = {
       path: item.path,
@@ -154,6 +165,51 @@ const uploadFile = () => {
   })
   input.click()
   input.remove()
+}
+// 删除
+const removeItemsReq = new Request<FormData>({
+  url: '/file-system/remove-items',
+  method: 'post'
+})
+const removeItems = async (itemList: ItemListType[]) => {
+  await removeItemsReq.req({
+    data: {
+      pathList: itemList.map(({ path }) => path)
+    }
+  })
+  itemList.forEach(({ path, isFile, parentPath }) => {
+    if (isFile) {
+      emits('updateData', parentPath)
+    } else {
+      emits('updateData', path)
+    }
+  })
+}
+// 收藏
+const collectItemReq = new Request<FormData>({
+  url: '/file-system/add-collect-path',
+  method: 'post'
+})
+const collectItem = async (item: ItemListType) => {
+  await collectItemReq.req({
+    data: {
+      path: item.path
+    }
+  })
+  await getFavorites()
+}
+// 取消收藏
+const cancelCollectItemReq = new Request<FormData>({
+  url: '/file-system/cancel-collect-path',
+  method: 'post'
+})
+const cancelCollectItem = async (item: ItemListType) => {
+  await cancelCollectItemReq.req({
+    data: {
+      path: item.path
+    }
+  })
+  await getFavorites()
 }
 const getDirData = async (info: { path: string }) => {
   await getDirDataReq.req({

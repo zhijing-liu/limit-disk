@@ -47,6 +47,11 @@ const responseMap: {
         result: true,
       },
     },
+    'remove-items': {
+      s1: {
+        result: true,
+      },
+    },
   },
 };
 export const response = async <T = any>(

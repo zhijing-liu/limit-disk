@@ -2,7 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { FileSystemEntity } from './file-system.entity';
-import { access, readdir, stat, writeFile } from 'node:fs';
+import { access, readdir, stat, writeFile, rm } from 'node:fs';
 import { join, normalize, extname, basename, dirname } from 'node:path';
 
 interface DirItemType {
@@ -200,6 +200,14 @@ export class FileSystemService {
       return false;
     }
   }
+  // 取消收藏地址
+  async cancelCollectPath(path: string) {
+    return this.fileSystemEntityRepository
+      .createQueryBuilder()
+      .delete()
+      .where('path = :path', { path })
+      .execute();
+  }
   async writeFile(file: Express.Multer.File, path: string) {
     return new Promise((resolve, reject) => {
       writeFile(join(path, file.originalname), file.buffer, (err) => {
@@ -213,5 +221,19 @@ export class FileSystemService {
   }
   async uploadFiles(files: Express.Multer.File[], path: string) {
     return Promise.all(files.map((file) => this.writeFile(file, path)));
+  }
+  async removeItem(path) {
+    return new Promise((resolve, reject) => {
+      rm(path, { recursive: true }, (err) => {
+        if (err) {
+          reject(err);
+        } else {
+          resolve(true);
+        }
+      });
+    });
+  }
+  async removeItems(pathList: string[]) {
+    return Promise.allSettled(pathList.map((path) => this.removeItem(path)));
   }
 }

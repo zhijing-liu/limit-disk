@@ -16,16 +16,11 @@ provide('lazy', true)
 provide('clickLabel', ({ e, item }: { e: MouseEvent; item: TreeItemType }) => {
   emits('clickLabel', { e, item })
 })
-const expansionItem = async (item: TreeItemType) => {
-  if (!item.leaf) {
-    if (!item.loaded) {
-      item.children = (await props.getReqData?.(item.id)) ?? []
-    }
-    item.expansion = true
-    item.loaded = true
-  }
+const loadItemData = async (item: TreeItemType) => {
+  console.log(item)
+  item.children = (await props.getReqData?.(item.id)) ?? []
 }
-provide('expansionItem', expansionItem)
+provide('loadItemData', loadItemData)
 const treeItemIns = reactive<{ [key: string]: TreeItem }>({})
 const props = withDefaults(
   defineProps<{
@@ -51,8 +46,7 @@ const refresh = (path: string) => {
     if (path.startsWith(item.id.toString())) {
       if (path === item.id) {
         if (item.loaded) {
-          item.loaded = false
-          expansionItem?.(item)
+          loadItemData?.(item)
         }
       } else {
         treeItemIns[item.id.toString()]?.refresh(path)

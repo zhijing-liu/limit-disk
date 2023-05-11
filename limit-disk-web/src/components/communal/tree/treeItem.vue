@@ -27,10 +27,19 @@ import type { TreeItemType } from '@/interface'
 const lazy = inject('lazy', () => false)
 
 const clickLabel = inject<(data: { e: MouseEvent; item: TreeItemType }) => any>('clickLabel')
-const expansionItem = inject<(item: TreeItemType) => void>('expansionItem')
+const loadItemData = inject<(item: TreeItemType) => Promise<void>>('loadItemData', async () => {})
 const props = defineProps<{
   item: TreeItemType
 }>()
+const expansionItem = async (item) => {
+  if (!item.leaf) {
+    if (!item.loaded) {
+      await loadItemData?.(item)
+    }
+    item.expansion = !item.expansion
+    item.loaded = true
+  }
+}
 const treeItemIns = reactive<{ [key: string]: any }>({})
 
 const refresh = (path: string) => {
@@ -38,8 +47,7 @@ const refresh = (path: string) => {
     if (path.startsWith(item.id.toString())) {
       if (path === item.id) {
         if (item.loaded) {
-          item.loaded = false
-          expansionItem?.(item)
+          loadItemData?.(item)
         }
       } else {
         treeItemIns[item.id.toString()]?.refresh(path)

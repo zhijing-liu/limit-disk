@@ -47,14 +47,23 @@ export class FileSystemController {
     const result = await this.fileSystemService.addCollectPath(path);
     return response('file-system', 'add-collect-path', result ? 's1' : 's2');
   }
+  @Post('/cancel-collect-path')
+  async cancelCollectPath(@Body() { path }: { path: string }) {
+    const result = await this.fileSystemService.cancelCollectPath(path);
+    return response('file-system', 'add-collect-path', result ? 's1' : 's2');
+  }
   @Post('/upload-files')
   @UseInterceptors(FilesInterceptor('files'))
   async uploadFiles(
     @UploadedFiles() files: Express.Multer.File[],
     @Body() body,
   ) {
-    // console.log(files, body.path);
     await this.fileSystemService.uploadFiles(files, body.path);
     return response('file-system', 'upload-files', 's1');
+  }
+  @Post('/remove-items')
+  async removeItems(@Body() body) {
+    const result = await this.fileSystemService.removeItems(body.pathList);
+    return response('file-system', 'remove-items', 's1', result);
   }
 }
