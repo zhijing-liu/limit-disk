@@ -1,10 +1,12 @@
 import axios, { AxiosRequestConfig } from 'axios'
 import { FileListType } from '@/interface'
-axios.defaults.baseURL = '/req'
 axios.interceptors.request.use((config) => {
   config.params = { ...config.params, t: new Date().getTime() }
   return config
 })
+if (process.env.NODE_ENV === 'development') {
+  axios.defaults.baseURL = '/req'
+}
 export class Request<T = any, D = any> {
   staticInfo
   resData?: T

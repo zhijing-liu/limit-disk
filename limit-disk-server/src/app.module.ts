@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { FileSystemModule } from './file-system/file-system.module';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { FileSystemEntity } from './file-system/file-system.entity';
+import { StaticModule } from './static/static.module';
 
 @Module({
   imports: [
@@ -12,6 +13,7 @@ import { FileSystemEntity } from './file-system/file-system.entity';
       synchronize: false,
     }),
     FileSystemModule,
+    StaticModule,
   ],
   controllers: [],
   providers: [],

@@ -6,6 +6,7 @@
     "composite": true,
     "baseUrl": ".",
     "moduleResolution": "node",
+    "types": ["node"],
     "paths": {
       "@/*": ["./src/*"]
     }
