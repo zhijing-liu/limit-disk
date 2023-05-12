@@ -9,7 +9,7 @@
 </template>
 <script setup lang="ts">
 import TreeItem from './treeItem.vue'
-import { inject, provide, reactive, ref } from 'vue'
+import { provide, reactive } from 'vue'
 import type { TreeItemType } from '@/interface'
 
 provide('lazy', true)
@@ -17,7 +17,6 @@ provide('clickLabel', ({ e, item }: { e: MouseEvent; item: TreeItemType }) => {
   emits('clickLabel', { e, item })
 })
 const loadItemData = async (item: TreeItemType) => {
-  console.log(item)
   item.children = (await props.getReqData?.(item.id)) ?? []
 }
 provide('loadItemData', loadItemData)

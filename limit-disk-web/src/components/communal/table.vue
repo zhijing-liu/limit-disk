@@ -20,7 +20,7 @@
 <script setup lang="ts">
 withDefaults(
   defineProps<{
-    data: any[]
+    data: any[] | { [key: string]: any }
     onKey: string
   }>(),
   {

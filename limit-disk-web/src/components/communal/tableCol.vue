@@ -17,6 +17,7 @@ const props = withDefaults(
     width?: string
     label?: string
     type?: 'text' | 'icon'
+    flex?: 'center' | 'flex-start' | 'flex-end' | 'space-round' | 'space-between'
     button?: {
       label: string
       type?: 'primary' | 'error'
@@ -26,11 +27,14 @@ const props = withDefaults(
   {
     fill: false,
     width: '30px',
-    type: 'text'
+    type: 'text',
+    flex: 'flex-start'
   }
 )
 const getStyle = computed(() =>
-  props.fill ? `flex:${+props.fill} 0 0;` : `flex:0 0 ${props.width};`
+  props.fill
+    ? `flex:${+props.fill} 0 0;justify-content:${props.flex};`
+    : `flex:0 0 ${props.width};justify-content:${props.flex};`
 )
 const getData = computed(() => {
   if (typeof props.onKey === 'string') {
@@ -57,5 +61,5 @@ const getData = computed(() => {
   .button
     height 100%
 .tableCol.tableCol-icon
-  justify-content center
+  justify-content center !important
 </style>
