@@ -28,7 +28,8 @@ onBeforeMount(async () => {
     expansion: false,
     name: char,
     id: char,
-    leaf: false
+    leaf: false,
+    parentId: ''
   }))
 })
 </script>

@@ -3,6 +3,7 @@ import { FileSystemModule } from './file-system/file-system.module';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { FileSystemEntity } from './file-system/file-system.entity';
 import { StaticModule } from './static/static.module';
+import { AppController } from './app.controller';
 
 @Module({
   imports: [
@@ -15,7 +16,7 @@ import { StaticModule } from './static/static.module';
     FileSystemModule,
     StaticModule,
   ],
-  controllers: [],
+  controllers: [AppController],
   providers: [],
 })
 export class AppModule {}

@@ -5,6 +5,7 @@ export interface TreeItemType {
   loaded?: boolean
   children?: TreeItemType[]
   expansion?: boolean
+  parentId: string | number
   [key: string]: any
 }
 export interface FolderTyped {

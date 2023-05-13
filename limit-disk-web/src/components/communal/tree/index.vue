@@ -5,6 +5,7 @@
     :item="item"
     :key="item.id"
     :ref="(ins)=>treeItemIns[item.id]=ins"
+    :selected="selected"
     )
 </template>
 <script setup lang="ts">
@@ -25,6 +26,7 @@ const props = withDefaults(
   defineProps<{
     items: TreeItemType[]
     getReqData: (path: number | string) => Promise<TreeItemType[]>
+    selected?: string | number
   }>(),
   {
     items: () => []

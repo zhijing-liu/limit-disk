@@ -25,5 +25,8 @@ export default defineConfig({
         changeOrigin: true
       }
     }
+  },
+  build: {
+    outDir: '../limit-disk-server/static/web'
   }
 })

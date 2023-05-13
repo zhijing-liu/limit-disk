@@ -1,10 +1,6 @@
 import moment from 'moment'
 
-import picImage from '@/assets/image/pic.png'
-import audioImage from '@/assets/image/audio.png'
-import videoImage from '@/assets/image/video.png'
-import itemImage from '@/assets/image/item.png'
-
+export * from './file'
 export const getSize = (size?: string | number): string => {
   if (size === undefined || isNaN(+size)) {
     return ''
@@ -22,21 +18,3 @@ export const getSize = (size?: string | number): string => {
 }
 export const timeFormat = (time: number, format?: string): string =>
   moment(time).format(format ?? 'YYYY年MM月DD日 hh:mm:ss')
-export const suffixMap: { [key: string]: 'pic' | 'audio' | 'video' } = {
-  '.png': 'pic',
-  '.jpg': 'pic',
-  '.jpeg': 'pic',
-  '.svg': 'pic',
-  '.mp3': 'audio',
-  '.flac': 'audio',
-  '.wav': 'audio',
-  '.mp4': 'video',
-  '.ts': 'video',
-  '.mkv': 'video'
-}
-export const suffixImageMap: { pic: string; audio: string; video: string; file: string } = {
-  pic: picImage,
-  audio: audioImage,
-  video: videoImage,
-  file: itemImage
-}

@@ -1,5 +1,5 @@
 <template lang="pug">
-.treeItem
+.treeItem(:class="{selected:selected===item.id}")
   .label(@click="(e)=>clickLabel({e,item})")
     img.icon(
       :src="item.leaf?starImage:triangleImage"
@@ -8,13 +8,14 @@
       )
     span {{item.name}}
   .expansion(v-if="item.expansion")
-    TreeItem(
-      v-if="item.children?.length>0"
-      v-for="(childItem) in item.children"
-      :item="childItem"
-      :key="item.id"
-      :ref="(ins)=>treeItemIns[item.id]=ins"
-      )
+    template(v-if="item.children?.length>0")
+      TreeItem(
+        v-for="(childItem) in item.children"
+        :item="childItem"
+        :key="item.id"
+        :ref="(ins)=>treeItemIns[item.id]=ins"
+        :selected="selected"
+        )
     .empty(v-else) 空
 </template>
 <script setup lang="ts">
@@ -30,8 +31,9 @@ const clickLabel = inject<(data: { e: MouseEvent; item: TreeItemType }) => any>(
 const loadItemData = inject<(item: TreeItemType) => Promise<void>>('loadItemData', async () => {})
 const props = defineProps<{
   item: TreeItemType
+  selected?: string | number
 }>()
-const expansionItem = async (item) => {
+const expansionItem = async (item: TreeItemType) => {
   if (!item.leaf) {
     if (!item.loaded) {
       await loadItemData?.(item)
@@ -108,4 +110,9 @@ defineExpose({
       padding-left 20px
       font-weight bold
       pointer-events none
+.treeItem.selected
+  >.label
+    background-color #268785
+    >span
+      background-color transparent
 </style>

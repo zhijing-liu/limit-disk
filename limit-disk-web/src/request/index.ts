@@ -1,5 +1,6 @@
-import axios, { AxiosRequestConfig } from 'axios'
-import { FileListType } from '@/interface'
+import axios from 'axios'
+import type { AxiosRequestConfig } from 'axios'
+import type { FileListType } from '@/interface'
 axios.interceptors.request.use((config) => {
   config.params = { ...config.params, t: new Date().getTime() }
   return config
@@ -11,19 +12,22 @@ export class Request<T = any, D = any> {
   staticInfo
   resData?: T
   status = 'noReq'
-  constructor(staticInfo: AxiosRequestConfig<D>) {
+  reduce: (data: any) => T
+  constructor(staticInfo: AxiosRequestConfig<D>, reduce: (data: any) => T = (data) => data) {
     this.staticInfo = staticInfo
+    this.reduce = reduce
   }
-  req(data?: AxiosRequestConfig<D>) {
+  req(data?: AxiosRequestConfig<D>, finallyFn?: (data?: T) => void) {
     return axios({
       ...this.staticInfo,
       ...data
     })
       .then((r) => {
         if (r.data.result) {
-          this.resData = r.data.data
+          const data = this.reduce(r.data.data)
+          this.resData = data
           this.status = 'success'
-          return r.data.data
+          return data
         } else {
           console.error(
             `error : ${this.staticInfo.url} , trace : ${r.data.trace} , msg : ${r.data.msg}`
@@ -34,6 +38,9 @@ export class Request<T = any, D = any> {
       .catch((err) => {
         this.status = 'error'
         throw new Error(err)
+      })
+      .finally(() => {
+        finallyFn?.(this.resData)
       })
   }
 }

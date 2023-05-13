@@ -8,6 +8,7 @@
     @clickLabel="clickLabel"
     :getReqData="getReqData"
     ref="treeViewIns"
+    :selected="getGlobalStore.filePathInfo?.path"
     )
 </template>
 <script setup lang="ts">
@@ -17,7 +18,7 @@ import { getDirInfoReq, Request } from '@/request'
 
 import menuImage from '@/assets/image/menu.png'
 
-import type { TreeItemType } from '@/interface'
+import type { FileListType, ItemListType, TreeItemType } from '@/interface'
 
 import { globalStore } from '@/stores'
 const getGlobalStore = globalStore()
@@ -33,28 +34,32 @@ withDefaults(
   }
 )
 
-const dataReduce = (items: any): TreeItemType[] =>
-  items.map((item: any) => ({
-    name: item.name,
-    id: item.path,
-    leaf: item.isFile
-  }))
-const loadTreeData = new Request({
-  method: 'post',
-  url: '/file-system/get-dir'
-})
+const loadTreeData = new Request<TreeItemType[]>(
+  {
+    method: 'post',
+    url: '/file-system/get-dir'
+  },
+  (items) =>
+    items.map((item: FileListType) => ({
+      name: item.name,
+      id: item.path,
+      leaf: item.isFile,
+      parentId: item.parentPath
+    }))
+)
 const getReqData = async (path: string) =>
-  dataReduce(
-    await loadTreeData.req({
-      data: {
-        path
-      }
-    })
-  )
+  loadTreeData.req({
+    data: {
+      path
+    }
+  })
+
 const clickLabel = async ({ item }: { e: MouseEvent; item: TreeItemType }) => {
+  const path = item.leaf ? item.parentId.toString() : item.id.toString()
+  console.log(item)
   await getDirInfoReq.req({
     data: {
-      path: item.id as string
+      path
     }
   })
   if (getDirInfoReq.resData) {
