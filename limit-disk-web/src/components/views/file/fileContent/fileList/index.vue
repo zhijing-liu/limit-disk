@@ -8,14 +8,16 @@
         Button(@click="uploadFile" :left-icon="uploadImage") 上传文件
         .interval
         .paths
-            template(v-for="item in getPathList")
-                .path(@click="()=>emits('skipPath',item.path)") {{item.name}}
-                .split \
+            template(v-for="(item,index) in getPathList.slice(0,-1)")
+              .path.button(@click="()=>emits('skipPath',item.path)") {{item.name}}
+              .split \
+            .path {{getPathList[getPathList.length-1]?.name}}
     Table.table(
         :data="fileList"
         onKey="path"
         @dblclickRow="clickFileListItem"
         :loading="fileListLoading"
+        :contextButtons="contextButtons"
     )
         template(#default="{data}")
             TableCol(:data="data" :onKey="()=>getFileSrc(data.row)" type="icon" width="30px" )
@@ -25,14 +27,13 @@
             TableCol(:data="data" label="类型" :onKey="()=>data.row.suffix?.slice(1)??data.row.isFile?'文件':'文件夹'" width="60px")
             TableCol(:data="data" width="40px" flex="center")
                 img.icon(:src="starImage" :class="{gray:!favorites[data.row.path]}" @click.stop="()=>favorites[data.row.path]?emits('cancelCollectItem',data.row):emits('collectItem',data.row)")
-            TableCol(:data="data" type="button" :button="{type:'error',label:'删除',click:()=>removeItems([data.row])}" width="60px")
 ResourceRender(
     v-model:visible="resourceRenderVisible"
     :file="renderResourceFile"
 )
 </template>
 <script setup lang="ts">
-import ResourceRender from '@/components/views/file/fileContent/resourceRender.vue'
+import ResourceRender from './resourceRender.vue'
 import Table from '@/components/communal/table.vue'
 import TableCol from '@/components/communal/tableCol.vue'
 import Button from '@/components/communal/button.vue'
@@ -41,9 +42,10 @@ import upperImage from '@/assets/image/upper.png'
 import uploadImage from '@/assets/image/upload.png'
 import homeImage from '@/assets/image/home.png'
 import starImage from '@/assets/image/star.png'
+import removeImage from '@/assets/image/remove.png'
 
 import { Request } from '@/request'
-import { computed, ref, watch } from 'vue'
+import { computed, reactive, ref, watch } from 'vue'
 import type { FileListType, ItemListType } from '@/interface'
 import { getFileSrc, timeFormat, getSize } from '@/utils'
 
@@ -73,6 +75,15 @@ const getDirDataReq = new Request<FileListType[]>({
   method: 'post',
   url: '/file-system/get-dir'
 })
+const contextButtons = reactive([
+  {
+    title: '删除',
+    click: (data: ItemListType) => {
+      removeItems([data])
+    },
+    icon: removeImage
+  }
+])
 const getDirData = async (info?: { path: string }) => {
   if (info) {
     fileList.value = []
@@ -163,8 +174,8 @@ const removeItems = async (itemList: ItemListType[]) => {
 // 在线预览
 const resourceRenderVisible = computed({
   get: () => !!renderResourceFile.value,
-  set: () => {
-    renderResourceFile.value = null
+  set: (v) => {
+    !v && (renderResourceFile.value = null)
   }
 })
 const renderResourceFile = ref<FileListType | null>(null)
@@ -193,15 +204,12 @@ defineExpose({
   flex-direction column
   padding 10px
   box-sizing border-box
-
   .header
     display flex
     align-items center
     padding 5px 0
-
     .interval
       flex 0 0 16px
-
     .paths
       flex 1 0 0
       font-size 12px
@@ -213,26 +221,23 @@ defineExpose({
       display flex
       align-items center
       overflow hidden
-
       .path
-        padding 3px 5px
+        padding 3px
         border-radius 4px
-        cursor pointer
         overflow hidden
         white-space nowrap
         text-overflow ellipsis
-
+      .path.button
+        padding 3px 5px
+        cursor pointer
         &:hover
           background-color #666666
-
       .split
         padding 0 2px
-
   .body
     flex 1 0 0
     display flex
     flex-direction column
-
   .table
     .icon
       width 20px

@@ -56,7 +56,6 @@ const getReqData = async (path: string) =>
 
 const clickLabel = async ({ item }: { e: MouseEvent; item: TreeItemType }) => {
   const path = item.leaf ? item.parentId.toString() : item.id.toString()
-  console.log(item)
   await getDirInfoReq.req({
     data: {
       path

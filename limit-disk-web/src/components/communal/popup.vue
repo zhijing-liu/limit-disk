@@ -6,25 +6,28 @@
   )
   Transition(name="fade")
     .popup(
-      v-if="watchVisible&&state!=='minimize'"
-      @click.stop
-      :style="getMinimizePopupStyle"
-      )
-      .header
-        .title {{title??''}}
-        .space
-        img.closeIcon(:src="minimizeImage" @click="setMinimize")
-        img.closeIcon(:src="fullScreenImage" @click="state=state==='fullscreen'?'normal':'fullscreen'")
-        img.closeIcon(:src="closeImage" @click="close")
-      .body
-        slot(name="default" )
-    .popup(
-      v-else-if="watchVisible&&state==='minimize'"
+      v-if="watchVisible"
+      v-show="state==='minimize'"
       @click.stop
       @mousedown.stop="mousedown"
       :style="getMinimizePopupStyle"
       )
       img.minimizeIcon(:src="minimizeIcon" draggable="false")
+  Transition(name="fade")
+      .popup(
+          v-if="watchVisible"
+          v-show="state!=='minimize'"
+          @click.stop
+          :style="getMinimizePopupStyle"
+      )
+          .header
+              .title {{title??''}}
+              .space
+              img.closeIcon(:src="minimizeImage" @click="setMinimize")
+              img.closeIcon(:src="fullScreenImage" @click="setFullscreen")
+              img.closeIcon(:src="closeImage" @click="close")
+          .body
+              slot(name="default" )
 </template>
 
 <script setup lang="ts">
@@ -40,10 +43,15 @@ const props = withDefaults(
     title?: string
     full?: boolean
     minimizeIcon: string
+    size?: { width: string; height: string }
   }>(),
   {
     clickMaskToClose: true,
-    full: false
+    full: false,
+    size: () => ({
+      width: '60vw',
+      height: '50vh'
+    })
   }
 )
 const emits = defineEmits<{
@@ -53,6 +61,7 @@ const emits = defineEmits<{
   (e: 'afterClose'): void
   (e: 'beforeOpen'): void
   (e: 'afterOpen'): void
+  (e: 'update:full', full: boolean): void
 }>()
 const maskIns = ref<HTMLDivElement | any>()
 const watchVisible = ref(props.visible)
@@ -76,6 +85,24 @@ const setMinimize = () => {
     state.value = 'minimize'
   })
 }
+const cancelMinimize = () => {
+  minimizeOffset.lastX = minimizeOffset.x
+  minimizeOffset.lastY = minimizeOffset.y
+  minimizeOffset.x = 0
+  minimizeOffset.y = 0
+  nextTick(() => {
+    state.value = props.full ? 'fullscreen' : 'normal'
+  })
+}
+const setFullscreen = () => {
+  if (state.value === 'fullscreen') {
+    state.value = 'normal'
+    emits('update:full', false)
+  } else {
+    state.value = 'fullscreen'
+    emits('update:full', true)
+  }
+}
 const dragging = ref(false)
 const mousedown = (e: MouseEvent) => {
   const startOffset = {
@@ -86,6 +113,7 @@ const mousedown = (e: MouseEvent) => {
   }
   dragging.value = true
   const rect = maskIns.value.getBoundingClientRect()
+
   const move = (e: MouseEvent) => {
     minimizeOffset.x = Math.max(
       -rect.width / 2 + 30,
@@ -101,13 +129,7 @@ const mousedown = (e: MouseEvent) => {
     document.body.removeEventListener('mouseup', up)
     dragging.value = false
     if (Math.hypot(e.x - startOffset.x, e.y - startOffset.y) < 3) {
-      minimizeOffset.lastX = minimizeOffset.x
-      minimizeOffset.lastY = minimizeOffset.y
-      minimizeOffset.x = 0
-      minimizeOffset.y = 0
-      nextTick(() => {
-        state.value = props.full ? 'fullscreen' : 'normal'
-      })
+      cancelMinimize()
     }
     e.stopPropagation()
   }
@@ -115,11 +137,20 @@ const mousedown = (e: MouseEvent) => {
   document.body.removeEventListener('mouseleave', up)
   document.body.addEventListener('mouseup', up)
 }
+const getSize = computed(() => {
+  if (state.value === 'normal') {
+    return `width:${props.size.width};height:${props.size.height};`
+  } else if (state.value === 'fullscreen') {
+    return 'width:100vw;height:100vh;'
+  } else {
+    return 'width:50px;height:50px;'
+  }
+})
 const getMinimizePopupStyle = computed(
   () =>
-    `transform:translate(${minimizeOffset.x}px, ${minimizeOffset.y}px);${
-      dragging.value ? 'transition-duration:0s' : ''
-    }`
+    `transform:translate(${minimizeOffset.x === 0 ? '0' : `${minimizeOffset.x}px`},${
+      minimizeOffset.y === 0 ? '0' : `${minimizeOffset.y}px`
+    });${dragging.value ? 'transition-duration:0s;' : ''}${getSize.value}`
 )
 const close = () => {
   emits('update:visible', false)
@@ -129,7 +160,8 @@ const open = () => {
 }
 defineExpose({
   close,
-  open
+  open,
+  cancelMinimize
 })
 watch(
   computed(() => props.visible),
@@ -163,8 +195,6 @@ watch(
   transition all 0.5s
   .popup
     position absolute
-    width 60vw
-    height 60vh
     display flex
     flex-direction column
     justify-content center
@@ -172,7 +202,9 @@ watch(
     background-color #222222
     border-radius 20px
     overflow hidden
-    transition all ease-in 0.5s
+    transition all ease-in 0.3s
+    border 8px solid #78c2c4
+    transform translate(0,0)
     .header
       height 60px
       display flex
@@ -180,6 +212,7 @@ watch(
       box-sizing border-box
       align-items center
       width 100%
+      border-bottom 1px solid #444444
       .title
         font-size 18px
         font-weight bold
@@ -207,21 +240,23 @@ watch(
 .popupMask.visible
   pointer-events all
   background-color rgba(33,33,33,.2)
-
 .popupMask.fullscreen
   .popup
-    width 100%
-    height 100%
+    width 100vw
+    height 100vh
+    border-width 0
 .popupMask.minimize
   pointer-events none
   .popup
+    border-width 0
     pointer-events all
     width 50px
     height 50px
-    background-color rgba(77,77,77,.5)
+    background-color rgb(77,77,77)
     border-radius 50%
     cursor pointer
     user-select none
+    opacity 0.5
     &:hover
-      background-color rgba(144,144,144,.5)
+      opacity 1
 </style>

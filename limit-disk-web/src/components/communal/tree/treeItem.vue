@@ -73,13 +73,15 @@ defineExpose({
     cursor pointer
     font-size 12px
     font-weight bold
-    padding 2px 6px
+    padding 2px 4px
     box-sizing border-box
-    margin 2px
+    margin 2px 6px
     user-select none
     max-width 150%
     overflow hidden
     text-overflow ellipsis
+    &:hover
+      background-color #555555
     .icon
       width 8px
       height 8px
@@ -98,8 +100,6 @@ defineExpose({
       display flex
       align-items center
       transition all 0.1s
-      &:hover
-        background-color #555555
   .expansion
     padding-left 20px
     .empty
@@ -112,7 +112,7 @@ defineExpose({
       pointer-events none
 .treeItem.selected
   >.label
-    background-color #268785
+    background-color #1b615f
     >span
       background-color transparent
 </style>
