@@ -2,11 +2,14 @@
 Popup(
   v-model:visible="visible"
   title="预览"
-  @beforeOpen="beforeOpen"
   :minimizeIcon="getFileSrc"
   v-model:full="fullscreen"
   ref="popupIns"
   )
+  .arrowButton.leftButton(@click="emits('setLast')")
+    img.icon(:src="lastImage")
+  .arrowButton.rightButton(@click="emits('setNext')")
+    img.icon(:src="nextImage")
   template(v-if="fileType==='audio'" )
     audio.displayArea(:src="getStaticPath" controls="true" autoplay="true")
   template(v-if="fileType==='video'" )
@@ -17,6 +20,8 @@ Popup(
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
 import Popup from '@/components/communal/popup.vue'
+import lastImage from '@/assets/image/last.png'
+import nextImage from '@/assets/image/next.png'
 
 import { suffixImageMap, suffixMap } from '@/utils'
 
@@ -28,6 +33,8 @@ const props = defineProps<{
 }>()
 const emits = defineEmits<{
   (e: 'update:visible', visible: boolean): void
+  (e: 'setLast'): void
+  (e: 'setNext'): void
 }>()
 const popupIns = ref()
 const fullscreen = ref(true)
@@ -46,17 +53,36 @@ watch(
     }
   }
 )
-const beforeOpen = () => {
-  console.log(props.file)
-}
 </script>
 
 <style scoped lang="stylus">
+.arrowButton
+  width 40px
+  height 40px
+  display flex
+  justify-content center
+  align-items center
+  position absolute
+  top 50%
+  transform translateY(-50%)
+  z-index 1
+  cursor pointer
+  border-radius 8px
+  .icon
+    width 80%
+    height 80%
+  &:hover
+    background-color #444444
+.leftButton
+  left 10px
+.rightButton
+  right 10px
 .image
   height 100%
   width 100%
   object-fit contain
 .displayArea
   flex 1 0 100%
-  height 100%
+  //height inherit
+  width inherit
 </style>

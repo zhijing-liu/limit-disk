@@ -148,7 +148,7 @@ export class FileSystemService {
     const list = await this.fileSystemEntityRepository.find();
     return Promise.allSettled(
       list.map(
-        ({ id, path, name, time }) =>
+        ({ id, path, name, time, parentPath }) =>
           new Promise((resolve, reject) => {
             stat(path, (err, stats) => {
               if (err) {
@@ -163,6 +163,7 @@ export class FileSystemService {
                     isFile: true,
                     suffix: extname(name),
                     size: stats.size,
+                    parentPath,
                   });
                 } else {
                   resolve({
@@ -171,6 +172,7 @@ export class FileSystemService {
                     name,
                     time,
                     isFile: false,
+                    parentPath,
                   });
                 }
               }

@@ -30,6 +30,8 @@
 ResourceRender(
     v-model:visible="resourceRenderVisible"
     :file="renderResourceFile"
+    @setLast="setLast"
+    @setNext="setNext"
 )
 </template>
 <script setup lang="ts">
@@ -103,6 +105,21 @@ const getDirData = async (info?: { path: string }) => {
 }
 const refresh = () => {
   getDirData(props.fileInfo)
+}
+const findRenderResourceIndex = () =>
+  fileList.value.findIndex((item) => item.path === renderResourceFile.value?.path)
+
+const setLast = () => {
+  const index = findRenderResourceIndex()
+  if (index > 0) {
+    renderResourceFile.value = fileList.value[index - 1]
+  }
+}
+const setNext = () => {
+  const index = findRenderResourceIndex()
+  if (index >= 0 && index < fileList.value.length - 1) {
+    renderResourceFile.value = fileList.value[index + 1]
+  }
 }
 watch(
   computed(() => props.fileInfo),
