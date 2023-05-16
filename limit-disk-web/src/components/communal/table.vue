@@ -20,10 +20,14 @@
         name="default"
         :data="{type:'body',row:item}"
         )
-      .contextMenu(@click.stop="contextMenu=undefined" @dblclick.stop :class="{visible:contextMenu===item[onKey]}"
-          @contextmenu.stop.prevent="contextMenu=undefined")
+      .contextMenu(
+          @click.stop="contextMenu=undefined"
+          @dblclick.stop
+          :class="{visible:contextMenu===item[onKey]}"
+          @contextmenu.stop.prevent="contextMenu=undefined"
+          )
         img.button(
-            v-for="button in contextButtons"
+            v-for="button in getContextButtons(item)"
             @click="()=>button.click(item)"
             :src="button.icon"
             :class="{type:button.type}"
@@ -32,24 +36,40 @@
 </template>
 <script setup lang="ts">
 import loadingImage from '@/assets/svg/loading.svg'
-import { ref } from 'vue'
-withDefaults(
+import { computed, ref } from 'vue'
+const props = withDefaults(
   defineProps<{
     data: any[] | { [key: string]: any }
     onKey: string
     loading?: boolean
-    contextButtons?: {
-      icon: string
-      title: string
-      click: (data: any) => void
-      type?: string
-    }[]
+    contextButtons?:
+      | {
+          icon: string
+          title: string
+          click: (data: any) => void
+          type?: string
+        }[]
+      | ((item: any) => {
+          icon: string
+          title: string
+          click: (data: any) => void
+          type?: string
+        }[])
   }>(),
   {
     data: () => [],
     onKey: 'id'
   }
 )
+const getContextButtons = computed(() => {
+  if (typeof props.contextButtons === 'function') {
+    return props.contextButtons
+  } else if (typeof props.contextButtons === 'object') {
+    return (item: any) => props.contextButtons
+  } else {
+    return () => []
+  }
+})
 const contextMenu = ref()
 const emits = defineEmits<{
   (e: 'clickRow', item: any): void
@@ -104,19 +124,22 @@ const emits = defineEmits<{
       background-color #235d5d
       height 100%
       //width 100%
-      padding 0 15px
+      //padding 0 15px
       box-sizing border-box
       align-items center
       transition all 0.3s
       transform translateX(100%)
       transform-origin top
       border-radius 8px 0 0 8px
+      overflow hidden
       .button
-        height 20px
-        width 20px
-        padding 4px 12px
-        border-radius 5px
-        background-color #246a68
+        height 100%
+        //width 20px
+        box-sizing border-box
+        padding 8px
+        //border-radius 5px
+        background-color #235d5d
+        //margin 2px
         &:hover
           background-color #297876
     .contextMenu.visible

@@ -45,6 +45,7 @@ import uploadImage from '@/assets/image/upload.png'
 import homeImage from '@/assets/image/home.png'
 import starImage from '@/assets/image/star.png'
 import removeImage from '@/assets/image/remove.png'
+import downloadImage from '@/assets/image/download.png'
 
 import { Request } from '@/request'
 import { computed, reactive, ref, watch } from 'vue'
@@ -77,15 +78,36 @@ const getDirDataReq = new Request<FileListType[]>({
   method: 'post',
   url: '/file-system/get-dir'
 })
-const contextButtons = reactive([
-  {
-    title: '删除',
-    click: (data: ItemListType) => {
-      removeItems([data])
-    },
-    icon: removeImage
+const contextButtons = (item: FileListType) => {
+  const list = [
+    {
+      title: '删除',
+      click: (data: FileListType) => {
+        removeItems([data])
+      },
+      icon: removeImage
+    }
+  ]
+  if (item.isFile) {
+    list.push({
+      title: '下载',
+      click: (data: FileListType) => {
+        downloadFile(data)
+      },
+      icon: downloadImage
+    })
   }
-])
+  return list
+}
+const downloadFile = (item: FileListType) => {
+  console.log(item)
+  const a = document.createElement('a')
+  a.href = getStaticPath(item)
+  a.click()
+  a.remove()
+}
+const getStaticPath = (item: FileListType) =>
+  `/static/file/${item.name}?path=${item.path}&download=true`
 const getDirData = async (info?: { path: string }) => {
   if (info) {
     fileList.value = []
@@ -143,7 +165,7 @@ const uploadFileReq = new Request<FormData>({
 const uploadFile = () => {
   const input = document.createElement('input')
   input.type = 'file'
-  input.accept = 'accept'
+  // input.accept = '*'
   input.multiple = true
   input.addEventListener('change', async () => {
     const formData = new FormData()
@@ -173,7 +195,7 @@ const removeItemsReq = new Request<FormData>({
   url: '/file-system/remove-items',
   method: 'post'
 })
-const removeItems = async (itemList: ItemListType[]) => {
+const removeItems = async (itemList: FileListType[]) => {
   await removeItemsReq.req({
     data: {
       pathList: itemList.map(({ path }) => path)
