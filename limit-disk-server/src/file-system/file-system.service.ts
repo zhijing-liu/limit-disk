@@ -2,7 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { FileSystemEntity } from './file-system.entity';
-import { access, readdir, stat, writeFile, rm } from 'node:fs';
+import { access, readdir, stat, writeFile, rm, rename } from 'node:fs';
 import { join, normalize, extname, basename, dirname } from 'node:path';
 
 interface DirItemType {
@@ -237,5 +237,31 @@ export class FileSystemService {
   }
   async removeItems(pathList: string[]) {
     return Promise.allSettled(pathList.map((path) => this.removeItem(path)));
+  }
+  async copyTo(path: string, items: ItemListType[]) {
+    return Promise.allSettled(
+      items.map(
+        ({ path: sourcePath }) =>
+          new Promise((resolve, reject) => {
+            resolve(true);
+          }),
+      ),
+    );
+  }
+  async moveTo(path: string, items: ItemListType[]) {
+    return Promise.allSettled(
+      items.map(
+        ({ path: sourcePath, name }) =>
+          new Promise((resolve, reject) => {
+            rename(sourcePath, join(path, name), (err) => {
+              if (err) {
+                reject();
+              } else {
+                resolve(true);
+              }
+            });
+          }),
+      ),
+    );
   }
 }

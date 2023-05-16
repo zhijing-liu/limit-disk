@@ -16,7 +16,7 @@ const props = withDefaults(
     fill?: boolean | number
     width?: string
     label?: string
-    type?: 'text' | 'icon'
+    type?: 'text' | 'icon' | 'button'
     flex?: 'center' | 'flex-start' | 'flex-end' | 'space-round' | 'space-between'
     button?: {
       label: string

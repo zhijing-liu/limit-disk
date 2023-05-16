@@ -66,4 +66,14 @@ export class FileSystemController {
     const result = await this.fileSystemService.removeItems(body.pathList);
     return response('file-system', 'remove-items', 's1', result);
   }
+  @Post('/copy-to')
+  async copyTo(@Body() body) {
+    const result = await this.fileSystemService.copyTo(body.path, body.items);
+    return response('file-system', 'copy-to', 's1', result);
+  }
+  @Post('/move-to')
+  async moveTo(@Body() body) {
+    const result = await this.fileSystemService.moveTo(body.path, body.items);
+    return response('file-system', 'move-to', 's1', result);
+  }
 }
