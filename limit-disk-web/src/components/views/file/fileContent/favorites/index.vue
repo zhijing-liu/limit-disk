@@ -1,6 +1,6 @@
 <template lang="pug">
 Table.table(:data="favorites" onKey="path"
-    @clickRow="(item)=>clickItem(item.path,item.name,item.parentPath)"
+    @clickRow="(item)=>clickItem(item)"
     )
   template(#default="{data}")
     TableCol(:data="data" :onKey="()=>getFileSrc(data.row)" type="icon" width="30px" )
@@ -34,11 +34,11 @@ const emits = defineEmits<{
   (e: 'update:fileInfo', fileInfo?: typeof props.fileInfo): void
   (e: 'cancelCollectItem', item: ItemListType): void
 }>()
-const clickItem = (path: string, name: string, parentPath?: string) => {
+const clickItem = (item: ItemListType) => {
   emits('update:fileInfo', {
-    path: path,
-    name: name,
-    parentPath
+    path: item.path,
+    name: item.name,
+    parentPath: item.parentPath
   })
 }
 </script>

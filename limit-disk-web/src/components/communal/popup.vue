@@ -233,6 +233,7 @@ watch(
       padding 10px
       box-sizing border-box
       width 100%
+      position relative
     .minimizeIcon
       height 60%
       width 60%

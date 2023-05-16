@@ -5,7 +5,12 @@
         .interval
         Button(@click="()=>emits('skipPath')" :left-icon="upperImage") 上一级
         .interval
-        Button(@click="uploadFile" :left-icon="uploadImage") 上传文件
+        template(v-if="selectedSize===0" )
+          Button(@click="uploadFile" :left-icon="uploadImage") 上传文件
+        template(v-else )
+          Button(@click="()=>removeItems()" :left-icon="removeImage") 删除
+          .interval
+          Button(@click="()=>addRecode()" :left-icon="addImage") 添加剪切板
         .interval
         .paths
             template(v-for="(item,index) in getPathList.slice(0,-1)")
@@ -18,22 +23,29 @@
         @dblclickRow="clickFileListItem"
         :loading="fileListLoading"
         :contextButtons="contextButtons"
+        :allowSelect="true"
+        @selectedChanged="selectedChanged"
+        ref="tableIns"
     )
         template(#default="{data}")
             TableCol(:data="data" :onKey="()=>getFileSrc(data.row)" type="icon" width="30px" )
             TableCol(:data="data" label="名称" onKey="name" :fill="true")
             TableCol(:data="data" label="创建时间" :onKey="()=>timeFormat(data.row.time)" :fill="true")
             TableCol(:data="data" label="文件大小" :onKey="()=>getSize(data.row.size)" :fill="true")
-            TableCol(:data="data" label="类型" :onKey="()=>data.row.suffix?.slice(1)??data.row.isFile?'文件':'文件夹'" width="60px")
+            TableCol(:data="data" label="类型" :onKey="()=>data.row.suffix?.slice(1)??(data.row.isFile?'文件':'文件夹')" width="60px")
             TableCol(:data="data" width="40px" flex="center")
                 img.icon(:src="starImage" :class="{gray:!favorites[data.row.path]}" @click.stop="()=>favorites[data.row.path]?emits('cancelCollectItem',data.row):emits('collectItem',data.row)")
 ResourceRender(
     v-model:visible="resourceRenderVisible"
     :file="renderResourceFile"
+    @setLast="setLast"
+    @setNext="setNext"
 )
+RecodePopup(ref="recodePopupIns" @refresh="refresh")
 </template>
 <script setup lang="ts">
 import ResourceRender from './resourceRender.vue'
+import RecodePopup from './recodePopup.vue'
 import Table from '@/components/communal/table.vue'
 import TableCol from '@/components/communal/tableCol.vue'
 import Button from '@/components/communal/button.vue'
@@ -43,6 +55,8 @@ import uploadImage from '@/assets/image/upload.png'
 import homeImage from '@/assets/image/home.png'
 import starImage from '@/assets/image/star.png'
 import removeImage from '@/assets/image/remove.png'
+import downloadImage from '@/assets/image/download.png'
+import addImage from '@/assets/image/add.png'
 
 import { Request } from '@/request'
 import { computed, reactive, ref, watch } from 'vue'
@@ -68,6 +82,18 @@ const emits = defineEmits<{
   (e: 'collectItem', item: ItemListType): void
   (e: 'cancelCollectItem', item: ItemListType): void
 }>()
+
+const tableIns = ref()
+// 选择
+const selectedSize = ref(0)
+const selectedChanged = (selected: Set<number | string>) => {
+  selectedSize.value = selected.size
+}
+// 移动复制
+const recodePopupIns = ref()
+const addRecode = (itemList: FileListType[] = tableIns.value.getSelection()) => {
+  recodePopupIns.value.addItems(itemList)
+}
 // 数据加载
 const fileListLoading = ref(false)
 const fileList = ref<FileListType[]>([])
@@ -75,15 +101,43 @@ const getDirDataReq = new Request<FileListType[]>({
   method: 'post',
   url: '/file-system/get-dir'
 })
-const contextButtons = reactive([
-  {
-    title: '删除',
-    click: (data: ItemListType) => {
-      removeItems([data])
+const contextButtons = (item: FileListType) => {
+  const list = [
+    {
+      title: '删除',
+      click: (data: FileListType) => {
+        removeItems([data])
+      },
+      icon: removeImage
     },
-    icon: removeImage
+    {
+      title: '添加剪切板',
+      click: (data: FileListType) => {
+        recodePopupIns.value.addItems([data])
+      },
+      icon: addImage
+    }
+  ]
+  if (item.isFile) {
+    list.push({
+      title: '下载',
+      click: (data: FileListType) => {
+        downloadFile(data)
+      },
+      icon: downloadImage
+    })
   }
-])
+  return list
+}
+const downloadFile = (item: FileListType) => {
+  console.log(item)
+  const a = document.createElement('a')
+  a.href = getStaticPath(item)
+  a.click()
+  a.remove()
+}
+const getStaticPath = (item: FileListType) =>
+  `/static/file/${item.name}?path=${item.path}&download=true`
 const getDirData = async (info?: { path: string }) => {
   if (info) {
     fileList.value = []
@@ -103,6 +157,21 @@ const getDirData = async (info?: { path: string }) => {
 }
 const refresh = () => {
   getDirData(props.fileInfo)
+}
+const findRenderResourceIndex = () =>
+  fileList.value.findIndex((item) => item.path === renderResourceFile.value?.path)
+
+const setLast = () => {
+  const index = findRenderResourceIndex()
+  if (index > 0) {
+    renderResourceFile.value = fileList.value[index - 1]
+  }
+}
+const setNext = () => {
+  const index = findRenderResourceIndex()
+  if (index >= 0 && index < fileList.value.length - 1) {
+    renderResourceFile.value = fileList.value[index + 1]
+  }
 }
 watch(
   computed(() => props.fileInfo),
@@ -126,7 +195,7 @@ const uploadFileReq = new Request<FormData>({
 const uploadFile = () => {
   const input = document.createElement('input')
   input.type = 'file'
-  input.accept = 'accept'
+  // input.accept = '*'
   input.multiple = true
   input.addEventListener('change', async () => {
     const formData = new FormData()
@@ -156,7 +225,7 @@ const removeItemsReq = new Request<FormData>({
   url: '/file-system/remove-items',
   method: 'post'
 })
-const removeItems = async (itemList: ItemListType[]) => {
+const removeItems = async (itemList: FileListType[] = tableIns.value.getSelection()) => {
   await removeItemsReq.req({
     data: {
       pathList: itemList.map(({ path }) => path)

@@ -52,6 +52,16 @@ const responseMap: {
         result: true,
       },
     },
+    'copy-to': {
+      s1: {
+        result: true,
+      },
+    },
+    'move-to': {
+      s1: {
+        result: true,
+      },
+    },
   },
 };
 export const response = async <T = any>(

@@ -10,20 +10,25 @@
     )
   .body
     .row(
-      v-for="item in data"
-      :key="item[onKey]"
-      @click="emits('clickRow',item)"
+      v-for="(item,index) in data"
+      :key="item[onKey]??index"
+      @click="(e)=>clickRow(e,item,index)"
       @dblclick="emits('dblclickRow',item)"
       @contextmenu.stop.prevent="contextMenu=item[onKey]"
+      :class="{selected:selectedRow.has(item[onKey])}"
       )
       slot(
         name="default"
         :data="{type:'body',row:item}"
         )
-      .contextMenu(@click.stop="contextMenu=undefined" @dblclick.stop :class="{visible:contextMenu===item[onKey]}"
-          @contextmenu.stop.prevent="contextMenu=undefined")
+      .contextMenu(
+          @click.stop="contextMenu=undefined"
+          @dblclick.stop
+          :class="{visible:contextMenu===item[onKey]}"
+          @contextmenu.stop.prevent="contextMenu=undefined"
+          )
         img.button(
-            v-for="button in contextButtons"
+            v-for="button in getContextButtons(item)"
             @click="()=>button.click(item)"
             :src="button.icon"
             :class="{type:button.type}"
@@ -32,29 +37,99 @@
 </template>
 <script setup lang="ts">
 import loadingImage from '@/assets/svg/loading.svg'
-import { ref } from 'vue'
-withDefaults(
+import { computed, reactive, ref, watch } from 'vue'
+const props = withDefaults(
   defineProps<{
     data: any[] | { [key: string]: any }
     onKey: string
     loading?: boolean
-    contextButtons?: {
-      icon: string
-      title: string
-      click: (data: any) => void
-      type?: string
-    }[]
+    allowSelect?: boolean
+    contextButtons?:
+      | {
+          icon: string
+          title: string
+          click: (data: any) => void
+          type?: string
+        }[]
+      | ((item: any) => {
+          icon: string
+          title: string
+          click: (data: any) => void
+          type?: string
+        }[])
   }>(),
   {
     data: () => [],
-    onKey: 'id'
+    onKey: 'id',
+    allowSelect: false
   }
 )
+const getContextButtons = computed(() => {
+  if (typeof props.contextButtons === 'function') {
+    return props.contextButtons
+  } else if (typeof props.contextButtons === 'object') {
+    return (item: any) => props.contextButtons
+  } else {
+    return () => []
+  }
+})
 const contextMenu = ref()
 const emits = defineEmits<{
   (e: 'clickRow', item: any): void
   (e: 'dblclickRow', item: any): void
+  (e: 'selectedChanged', list: typeof selectedRow): void
 }>()
+const selectedRow = reactive(new Set())
+watch(
+  computed(() => props.data),
+  () => {
+    selectedRow.clear()
+    shiftSelectKey.value = undefined
+  }
+)
+watch(selectedRow, () => {
+  emits('selectedChanged', selectedRow)
+})
+const shiftSelectKey = ref()
+const clickRow = (e: MouseEvent, item: any, index: number) => {
+  if (props.allowSelect) {
+    const key = item[props.onKey] ?? index
+    if (e.ctrlKey) {
+      selectedRow.has(key) ? selectedRow.delete(key) : selectedRow.add(key)
+      shiftSelectKey.value = undefined
+    } else if (e.shiftKey) {
+      if (shiftSelectKey.value && shiftSelectKey.value !== key) {
+        let start = false
+        props.data.forEach((item: any, index: number) => {
+          if (
+            (item[props.onKey] ?? index) === shiftSelectKey.value ||
+            (item[props.onKey] ?? index) === key
+          ) {
+            start = !start
+            selectedRow.add(item[props.onKey] ?? index)
+          }
+          if (start) {
+            selectedRow.add(item[props.onKey] ?? index)
+          }
+        })
+      } else {
+        shiftSelectKey.value = key
+        selectedRow.add(key)
+      }
+    } else {
+      shiftSelectKey.value = undefined
+      selectedRow.clear()
+    }
+  }
+  emits('clickRow', item)
+}
+defineExpose({
+  getSelection: () => {
+    return props.data.filter((item: any, index: number) =>
+      selectedRow.has(item[props.onKey] ?? index)
+    )
+  }
+})
 </script>
 
 <style scoped lang="stylus">
@@ -104,23 +179,28 @@ const emits = defineEmits<{
       background-color #235d5d
       height 100%
       //width 100%
-      padding 0 15px
+      //padding 0 15px
       box-sizing border-box
       align-items center
       transition all 0.3s
       transform translateX(100%)
       transform-origin top
       border-radius 8px 0 0 8px
+      overflow hidden
       .button
-        height 20px
-        width 20px
-        padding 4px 12px
-        border-radius 5px
-        background-color #246a68
+        height 100%
+        //width 20px
+        box-sizing border-box
+        padding 8px
+        //border-radius 5px
+        background-color #235d5d
+        //margin 2px
         &:hover
           background-color #297876
     .contextMenu.visible
       transform rotate3d(1,0,0,0deg)
   .row.header
     background-color #333333
+  .row.selected
+    background-color #268785
 </style>
